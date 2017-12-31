@@ -18,5 +18,9 @@ change root drive on sd card (to new PARTUUID or UUID)
 change fstab on external drive (which is root partition, now, to new PARTUUID or UUID)
   UUID=b20dd4ef-2abf-407f-bb36-7b032b7d37f7  /               ext4    defaults,noatime  0       1
  
- re-insert sd card and plug in external device
- boot
+re-insert sd card and plug in external device
+boot
+
+resize root partition (assuming external drive has a larger capacity than sd card)
+  parted (do it..)
+  
