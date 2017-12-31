@@ -1,0 +1,22 @@
+method of choice if usb<->sata adapter is too slow for direct boot (mine (Logilink) comes up after 9(!) sec)
+do not duplicate sd card while in use (i.e. don't do this on the pi)
+use dd to copy partitions from sd card to external drive:
+  dd if=/dev/sda of=name_of_image
+  dd if=name_of_image of=/dev/name_of_device
+to check progress while dd'ing: send SIGUSR1 to dd process:
+  get pid of dd (ps -ef | grep dd)
+  kill -USR1 pid
+make sure UUID and PARTUID of duplicated partitions are unique (they will be identical after duplication)
+  tune2fs -U random /dev/name_of_device_partition_number_2 (part #1 is boot partition) (for UUID)
+  fdisk /dev/name_of_device_partition_number_2 (for PARTUUID)
+    go to expert mode (x)
+    change identifier (i) (e.g. last digit)
+    exit expert mode
+    commit changes (w)
+change root drive on sd card (to new PARTUUID or UUID)
+  dwc_otg.lpm_enable=0 console=serial0,115200 console=tty1 root=PARTUUID=8f1eafaf-02 rootfstype=ext4 elevator=deadline fsck.repair=yes rootwait
+change fstab on external drive (which is root partition, now, to new PARTUUID or UUID)
+  UUID=b20dd4ef-2abf-407f-bb36-7b032b7d37f7  /               ext4    defaults,noatime  0       1
+ 
+ re-insert sd card and plug in external device
+ boot
