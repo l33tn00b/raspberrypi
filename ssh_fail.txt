@@ -1,0 +1,20 @@
+If ssh login fails: QoS may be the culprit.
+Symptom: Login prompt is displayed, nothing happens after entering password.
+Solution is from 
+https://expresshosting.net/ssh-hanging-authentication/
+
+Edit the two configuration files for the Raspberry Pi:
+
+/etc/ssh/ssh_config
+/etc/ssh/sshd_config
+
+And add the following line to the bottom of the configuration file:
+
+IPQoS 0x00
+
+And restart sshd (sudo service sshd restart).
+
+The problem is caused by my Netgear Smart (or not so) managed switch.
+Without it, everything is fine. 
+
+As stated in the solution: Pain to track down.
