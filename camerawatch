@@ -1,6 +1,7 @@
 #!/bin/sh
 #place this in /etc/init.d
 #and make it executable
+#thanks fly to https://haus-automatisierung.com/hardware/fhem/2016/07/14/fhem-tutorial-reihe-part-11-benachrichtigung-mit-bild-bei-bewegung.html
 ### BEGIN INIT INFO
 # Provides: camerawatch
 # Required-Start: $network $remote_fs $syslog
