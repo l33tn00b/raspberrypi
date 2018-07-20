@@ -1,0 +1,1 @@
+define DOIF di_motion_camera (OUT.Bewegung {my $temp = sprintf "../../%s", ReadingsVal("OUT.Bewegung","current_file",0);;fhem("set pushmsg msg 'Bewegung Einfahrt/Haustür bemerkt' title='Bewegung bemerkt' attachment='$temp'")})
