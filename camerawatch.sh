@@ -60,7 +60,24 @@ exec 3< <(inotifywait -m -e create  /home/pi/ftp/C1-Lite_XXXXXXX/snap)
         token=$(curl -s -D - 'http://localhost:8083/fhem?XHR=1' | awk '/X-FHEM-csrfToken/{print $2}')
         #and post to fhem dummy as a reading
         curl --data "fwcsrf=$token" "http://localhost:8083/fhem?cmd=setreading%20OUT.Bewegung%20current_file%20/var/tmp/composite.jpg"
-
+        echo "doing detection magic"
+         cd /home/pi/ncsdk/ncappzoo/apps/security-cam
+         #numpix has already been dec'd
+         for i in `seq 0 $numpix`
+         do
+            echo "${apix[$i]}"
+            python3 security-cam.py -t 20 -i ${apix[$i]}
+            #exit codes: 
+            #0 -> normal execution , no person detected
+            #1 -> error, image file not found
+            #2 -> person detected
+            #if exit codes indicates having detected a person -> give a heads-up to fhem
+            #fhem will handle pushover to subscribed clients by watching the reading change
+            if [ $? -eq 2 ]
+            then
+               curl --data "fwcsrf=$token" "http://localhost:8083/fhem?cmd=setreading%20OUT.Bewegung%20detection_file%20/var/tmp/detection.jpg"	
+            fi
+         done
    fi
    unset apix
    unset adat
