@@ -1,6 +1,13 @@
+#!/usr/bin/python3
+#
+# this script is to demonstrate how to use the blinkpy module for Python.
+# see https://github.com/fronzbot/blinkpy for the module
+# the module makes your life much easier when dealing with the blink camera API from Python
+# the only thing I was left wishing for was some more documentation
+# so this is maybe helps getting started.
+
 from blinkpy import blinkpy
 from blinkpy.helpers.util import http_req
-from io import BytesIO
 import sys
 # do basic setup (as per blinkpy doc) 
 blink = blinkpy.Blink(username='YOUR USERNAME HERE', password='YOUR PASSWORD HERE', refresh_rate=30)
@@ -13,7 +20,7 @@ blink.start()
 # items():  Return a new view of the dictionary’s items ((key, value) pairs). 
 # See the documentation of view objects.
 # reference: https://docs.python.org/3/library/stdtypes.html#typesmapping
-print("getting cameras...")
+print("getting cameras and their attributes...")
 for name, camera in blink.cameras.items():
 	#print("Camera Name " + " " + name)  	# Name of the camera
 	#print(type(camera.attributes))
@@ -31,10 +38,9 @@ for name, camera in blink.cameras.items():
 #camera.image_to_file('/local/path/for/image.jpg')
 #camera.video_to_file('/local/path/for/video.mp4')
 
-
 # get events from sync modules linked to account
 # these are things like arming, disarming, boot, heartbeat to blink's servers
-print("getting events...")
+print("getting events and list of videos...")
 for name, syncmod in blink.sync.items():
 	#print("Sync Module" + " " + name)
 	print("All times are GMT.")
@@ -42,6 +48,7 @@ for name, syncmod in blink.sync.items():
 	# i.e. each element in the list of events is a dictionary
 	# [ {event1}, {event2}, ... ]
 	#print(syncmod.get_events())
+	# do some formatted output
 	for event in syncmod.get_events():
 		print('{:<20}'.format(event['type']) + '{:<20}'.format(event['created_at']))
 	# syncmod.get_videos() gives a dict with camera names as keys and
@@ -52,7 +59,7 @@ for name, syncmod in blink.sync.items():
 		print(cam)
 		print(item)
 		# this will keep the path to the first video of the last cam
-		# just for later downloading 
+		# just for later demonstration of downloading 
 		videopath = item[0]['clip']
 print("")
 #print(videopath)
