@@ -1,0 +1,70 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides: blinkwatch
+# Required-Start: $network $remote_fs $syslog
+# Required-Stop: $remote_fs $syslog
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+# Short-Description: Start daemon at boot time for blinkwatch
+# Description: Enable service provided by daemon.
+### END INIT INFO
+export PATH=$PATH:/usr/local/bin
+
+# get pid of housekeeping script
+PID=`cat /var/run/blinkwatch.sh.pid 2>/dev/null`
+# get pid of download script
+bdpidfile=/var/run/blinkdownload.py.pid
+PIDDS=`cat $bdpidfile 2>/dev/null`
+#echo "startup info: is something running already (query PID files)?"
+#echo "housekeeping script is running $PID."
+#echo "blinkdownload is running $PIDDS." 
+
+case "$1" in
+start)
+if ps -p $PID > /dev/null 2>&1; then
+    echo "Blinkwatch is already running"
+else
+    sudo /usr/local/bin/blinkwatch.sh > /dev/null 2>&1 &
+    sudo python3 /usr/local/bin/blinkdownload.py -u <YOUR USER NAME HERE> -p <YOUR PASSWORD HERE> -o /var/tmp/blinkwatch > /dev/null 2>&1 & echo $! > $bdpidfile
+    #debug: launch with output
+    #su - "root" -c "bash /usr/local/bin/camerawatch.sh &"echo "blinkwatch starting"
+    #su - "root" -c "python3 /usr/local/bin/blinkdownload.py -u <YOUR USER NAME HERE> -p <YOUR PASSWORD HERE> -o /var/tmp/blinkwatch &"echo "blinkdownload starting"
+    cat $bdpidfile
+    sleep 2
+    $0 status
+fi
+;;
+stop)
+if ! ps -p $PID > /dev/null 2>&1; then
+    echo "Blinkwatch is not running"
+else
+    echo "Shutting down housekeeping script.."
+    # kill housekeeping script
+    kill $PID
+    # kill download script
+    echo "Shutting down download script.."
+    kill $PIDDS
+    echo "Blinkwatch closed"
+fi
+;;
+restart)
+if ! ps -p $PID > /dev/null 2>&1; then
+    $0 start
+else
+    $0 stop
+    $0 start
+fi
+;;
+status)
+if ps -p $PID > /dev/null 2>&1; then
+    echo "Blinkwatch is running PID $PID"
+else
+    echo "Blinkwatch is not running"
+fi
+;;
+*)
+echo "Usage: $0 {start|stop|status|restart}"
+exit 1
+;;
+esac
+exit 0
