@@ -1,83 +1,96 @@
 #!/bin/bash
-#this is bash! not sh!
-#timeout after 5s (cam snaps every 2s when motion is detected)
+#fotos kommen ca alle 2 sek
+let tpicdelta=2
+#maximal 30s zusammenfassen (->15 bilder)
 let tdeltamax=5
-#go to directory where pictures are stored
-cd /home/pi/ftp/C1-Lite_XXXXX/snap
-#setup pid file
+
+cd /home/pi/ftp/C1-Lite_E8ABFA8CC679/snap
+
 mypidfile=/opt/fhem/camerawatch.sh.pid
+inotifypidfile=/var/run/inotify_camerawatch.pid
 #trap "rm -f '$mypidfile’" 2
-#uh-oh. maybe this is a bit too robust a way of shutting down our spawned bg processes
-#wil also kill other inotifies which may not be ours...
-#we need to break out of two loops to achieve clean exit
-trap "break 2; killall -9 inotifywait; rm -f '$mypidfile'" SIGINT SIGTERM
-#write pid
 echo $$ > "$mypidfile"
-#number of pictures taken until timeout (no more pictures from cam)
 let numpix=0
-#array for pictures
+let delta=0
 declare -a apix
-#array for creation time stamp (not used, relict from old version)
 declare -a adat
 #do not pipe but read via file descriptor
 #and establish inotifywait as background process
 #so we may take a break from reading/processing its output
-exec 3< <(inotifywait -m -e create  /home/pi/ftp/C1-Lite_XXXXXXX/snap)
+exec 3< <(inotifywait -m -e create  /home/pi/ftp/C1-Lite_E8ABFA8CC679/snap & echo $! &)
+# the first thing being output into our file redirection 
+# will be the pid of inotifywait
+# so we do our first read to get that
+read -t 2 <&3 $T bla
+# dump the pid to a pidfile
+# without buffering it. in case it matters 
+# note so self: it doesn't. (reading back the old pid of a previous run from the pid file
+# was due to placing the trap instruction before writing the (new) pid file)
+# who could have guessed that trap instructions get prepared (in full) before they are
+# executed. Hint: I didn't.
+stdbuf -i0 -o0 echo $bla > "$inotifypidfile"
+
+#modified shutdown of spawned inotify.
+#to be more selective (only kill ours)
+#we need to break out of two loops to achieve clean exit
+#todo: change hardcoded name of pid file to variable
+trap "kill -15 `stdbuf -i0 -o0 cat /var/run/inotify_camerawatch.pid`; rm -f '$mypidfile'; rm -f '$inotifypidfile'; break 2;" SIGINT SIGTERM
+  
 #read from file descriptor with timeout
-#afterwards, process (possible) output of inotifywait
-#group this, so we may access variables after loop completion (because of timeout)
+#afterwards, process (eventual) output of inotifywait
 { while true; do
    while read -t $tdeltamax <&3 $T path action file; do
-        adat[$numpix]=`date +%s`
+	adat[$numpix]=`date +%s`
         echo "adat[$numpix] is now ${adat[$numpix]}"
         #save path/name of file
         apix[$numpix]=$path$file
         echo "apix[$numpix] is now ${apix[$numpix]}"
-        #inc counter
+	#inc counter
         (( numpix ++ ))
         #echo "numpix is now $numpix"
-        echo "The file '$file' appeared in directory '$path' via '$action'"
+	logger "The file '$file' appeared in directory '$path' via '$action'"
+	echo "The file '$file' appeared in directory '$path' via '$action'"
    done
    echo "Terminate read loop because of timeout (or failed read, subprocess may be dead)."
    #do we have pictures?
    if [ "$numpix" -gt 0 ];
    then
-        echo "Processing $numpix pictures.."
-        echo ${apix[$numpix]}
-        #concatenate string of filenames
-        unset namestr
-        #dec counter (array starts at 0)
-        (( numpix -- ))
-        for i in `seq 0 $numpix`
-        do
-           echo "${apix[$i]}"
-           namestr="$namestr ${apix[$i]}"
-        done
-        echo "built string of filenames: $namestr"
-        #call imagemagick's montage to assemble pictures
-        `montage -adjoin -depth 8 -quality 20 -geometry '1x1+0+0<' $namestr /var/tmp/composite.jpg`
-        #get fhem csrf token
-        token=$(curl -s -D - 'http://localhost:8083/fhem?XHR=1' | awk '/X-FHEM-csrfToken/{print $2}')
-        #and post to fhem dummy as a reading
+	echo "Processing $numpix pictures.."
+	echo ${apix[$numpix]}
+	#concatenate string of filenames
+	unset namestr
+	(( numpix -- ))
+	for i in `seq 0 $numpix`
+	do
+	   echo "${apix[$i]}"
+	   namestr="$namestr ${apix[$i]}"
+	done
+	echo "built string of filenames: $namestr"
+	`montage -adjoin -depth 8 -quality 20 -geometry '1x1+0+0<' $namestr /var/tmp/composite.jpg`
+	logger "sending notification to fhem about composite image"
+	token=$(curl -s -D - 'http://localhost:8083/fhem?XHR=1' | awk '/X-FHEM-csrfToken/{print $2}')
         curl --data "fwcsrf=$token" "http://localhost:8083/fhem?cmd=setreading%20OUT.Bewegung%20current_file%20/var/tmp/composite.jpg"
-        echo "doing detection magic"
-         cd /home/pi/ncsdk/ncappzoo/apps/security-cam
-         #numpix has already been dec'd
-         for i in `seq 0 $numpix`
-         do
-            echo "${apix[$i]}"
-            python3 security-cam.py -t 20 -i ${apix[$i]}
-            #exit codes: 
-            #0 -> normal execution , no person detected
-            #1 -> error, image file not found
-            #2 -> person detected
-            #if exit codes indicates having detected a person -> give a heads-up to fhem
-            #fhem will handle pushover to subscribed clients by watching the reading change
-            if [ $? -eq 2 ]
-            then
-               curl --data "fwcsrf=$token" "http://localhost:8083/fhem?cmd=setreading%20OUT.Bewegung%20detection_file%20/var/tmp/detection.jpg"	
-            fi
-         done
+	
+	echo "doing detection magic"
+	cd /home/pi/ncsdk/ncappzoo/apps/security-cam
+	#numpix has already been dec'd
+	for i in `seq 0 $numpix`
+	do
+	   echo "${apix[$i]}"
+	   logger "Calling NCS security-cam script for person detection"
+	   python3 security-cam.py -t 20 -i ${apix[$i]}
+	   #exit codes: 
+	   #0 -> normal execution , no person detected
+	   #1 -> error, image file not found
+	   #2 -> person detected
+	   #if exit codes indicates having detected a person -> give a heads-up to fhem
+	   #fhem will handle pushover to subscribed clients by watching the reading change
+	   if [ $? -eq 2 ]
+	   then
+	        logger "Person found. notifying fhem."
+		curl --data "fwcsrf=$token" "http://localhost:8083/fhem?cmd=setreading%20OUT.Bewegung%20detection_file%20/var/tmp/detection.jpg"	
+	   fi
+	done
    fi
    unset apix
    unset adat
