@@ -1,0 +1,7 @@
+Description of the .conf file:
+https://mosquitto.org/man/mosquitto-conf-5.html
+
+Good description in combination with owntracks:
+https://www.linux.com/learn/keep-your-location-data-private-owntracks
+The only thing to watch out for is certificate generation by means of the setup script (tools package from owntracks repository): 
+The names of the certificate files are being set to the hostname of your server while in the supplied sample conf file (in conf.d) is left to "server.key"
