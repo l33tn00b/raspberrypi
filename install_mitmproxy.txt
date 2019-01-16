@@ -1,0 +1,7 @@
+- needs Python >= 3.6 (cryptography fails to build when trying to install via pip -> this is the indication), see https://github.com/mitmproxy/mitmproxy/issues/3135
+- so it doesn't work with Raspbian Stretch (Python 3.4)
+- even downloading the release from mitmproxy.org does not work without Python >= 3.6
+- so you need to build your own Python >= 3.6: See e.g. https://raspberrypi.stackexchange.com/questions/59381/how-do-i-update-my-rpi3-to-python-3-6
+- you might want to go for the latest version available on https://www.python.org/downloads/
+
+- set up Pi internal WiFi as AP: https://www.raspberrypi.org/documentation/configuration/wireless/access-point.md
