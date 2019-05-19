@@ -67,6 +67,7 @@ trap "kill -15 `stdbuf -i0 -o0 cat /var/run/inotify_camerawatch.pid`; rm -f '$my
 	done
 	echo "built string of filenames: $namestr"
 	`montage -adjoin -depth 8 -quality 20 -geometry '1x1+0+0<' $namestr /var/tmp/composite.jpg`
+	#https://forum.fhem.de/index.php?topic=21235.0 (for accessible directories)
 	mv /var/tmp/composite.jpg /opt/fhem/www/snapshots/composite.jpg
 	chmod a+r /opt/fhem/www/snapshots/composite.jpg
 	logger "sending notification to fhem about composite image"
