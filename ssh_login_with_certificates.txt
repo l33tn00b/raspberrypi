@@ -1,0 +1,10 @@
+
+Useful guide for setup:
+http://guficulo.blogspot.com/2015/04/backup-your-raspberry-pi-automatically.html
+
+Need root shell on Synology Diskstation:
+sudo su
+
+Make sure that ownership and permissions are set corrrectly (see https://www.daveperrett.com/articles/2010/09/14/ssh-authentication-refused/)...
+root@HDDpi:~/.ssh# ls -lsah authorized_keys
+4,0K -rw------- 1 root root 403 Mai 22 19:12 authorized_keys
