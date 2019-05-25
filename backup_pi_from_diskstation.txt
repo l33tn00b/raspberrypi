@@ -1,0 +1,18 @@
+Basic instructions:
+http://guficulo.blogspot.com/2015/04/backup-your-raspberry-pi-automatically.html
+
+We have to make amendments...
+* There is no way (anymore) to create directories directly under a volume (?)
+ * So we need to make these in admin's home
+ * The path will read /volume1/homes/admin/backups
+* On the Pi which is to be backed up: authorized_keys needs to be owned by root
+
+
+Our script therefore reads:
+
+SERVER=$1
+ADDRESS=$2
+NOW=$(date +"%Y-%m-%d")
+LOGFILE="$SERVER-$NOW.log"
+ping $ADDRESS -c 30 >> /volume1/homes/admin/backups/logs/$LOGFILE
+/usr/bin/rsync -av --delete --exclude-from=/volume1/homes/admin/backups/_scripts/rsync-exclude.txt -e "ssh -p 22" root@$ADDRESS:/ /volume1/homes/admin/backups/$SERVER/ >> /volume1/homes/admin/backups/logs/$LOGFILE 2>&1
