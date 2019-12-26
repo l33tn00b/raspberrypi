@@ -1,3 +1,6 @@
 https://www.reddit.com/r/homelab/comments/5ssb5h/ups_server_on_raspberry_pi/
 
 be sure to run a port scan against your nut server to verify port 3493 is open!
+
+and make sure, nobody messes with your config files:
+https://melgrubb.com/2016/12/11/rphs-v2-ups/ (chown / chmod part)
